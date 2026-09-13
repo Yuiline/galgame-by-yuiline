@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- 文档类型声明:标准 HTML5 -->
+<html lang="zh-CN">
+<head>
+    <!-- 字符编码:UTF-8 支持中文显示 -->
+    <meta charset="UTF-8">
+    <!-- 视口设置:让页面在移动端也能正确缩放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 网页标题,显示在浏览器标签页上 -->
+    <title>剧情对话小游戏</title>
+
+    <!-- ========================== 样式区(CSS) ========================== -->
+    <style>
+        /* 全局重置:消除浏览器默认的内外边距,避免出现意外间距 */
+        * { margin: 0; padding: 0; }
+
+        /* 页面主体:
+           - position: relative  作为子元素的定位参照
+           - min-height: 100vh  高度至少撑满一整屏
+           - overflow: hidden    防止溢出出现滚动条
+           - cursor: pointer     鼠标在整页任意位置都显示手型,提示"可点击推进"
+           - background-color: #222  ★ 备用底色:背景图加载失败时不会变成纯白,
+                                       保证文字至少在深色背景上能看清 */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow: hidden;
+            cursor: pointer;
+            background-color: #222;
+        }
+
+        /* 全屏背景图容器:
+           - absolute + 四向 0  铺满整个视口
+           - background-size: cover  等比缩放并裁剪填满
+           - background-position: center  图片始终居中 */
+        .game-body {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url(素材1.png);
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* 分隔线(视觉上像对话框顶部的发光条):
+           - 距底部 80px,位于剧情文字上方
+           - 透明 → 蓝色 → 透明 的渐变,呈现柔和发光效果 */
+        hr.underline {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            border: none;                  /* 清除 hr 默认边框 */
+            height: 5px;
+            background: linear-gradient(
+                to right,
+                transparent,
+                rgba(32, 152, 237, 0.47),
+                transparent
+            );
+            /* pointer-events: none 让 hr 不会"挡住"下方的点击事件,
+               保证 hr 所在区域也能继续触发推进对话 */
+            pointer-events: none;
+        }
+
+        /* 剧情文字框:
+           - absolute + bottom:100px  固定在屏幕下方
+           - left:50% + translateX(-50%)  水平居中
+           - width:80%  限制最大宽度,防止文字拉得太开
+           - pointer-events: none  让点击穿透文字层,
+             这样无论点文字还是背景,效果都一样(都触发 body 上的事件)
+           - ★ 半透明深色背景 + 文字阴影:无论背景图是亮是暗,
+             白字都能稳定看清,像真正的"对话框" */
+        .story-text {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            padding: 16px 24px;                    /* 内边距让文字不贴边 */
+            box-sizing: border-box;                /* padding 不撑大宽度 */
+            color: white;
+            font-size: 18px;
+            line-height: 1.6;
+            text-align: center;
+            user-select: none;                     /* 禁止选中,防止误操作 */
+            pointer-events: none;
+            background-color: rgba(0, 0, 0, 0.55);  /* 半透明黑色对话框底 */
+            border-radius: 8px;                    /* 圆角,更好看 */
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);/* 文字阴影,白底时也清晰 */
+            backdrop-filter: blur(4px);            /* 背景模糊,玻璃质感(可选) */
+            -webkit-backdrop-filter: blur(4px);     /* Safari 兼容写法 */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 全屏背景图层 -->
+    <div class="game-body"></div>
+
+    <!-- 分隔线(对话框发光效果) -->
+    <hr class="underline">
+
+    <!-- 剧情文本容器:
+         id="story-text" 用于 JS 获取并修改内容 -->
+    <div id="story-text" class="story-text"></div>
+
+    <!-- ========================== 脚本区(JS) ==========================
+         放在 body 末尾,确保 DOM 已构建完毕,
+         这样 getElementById 才能拿到元素。 -->
+    <script>
+        /* 1. 获取剧情文本的 DOM 元素引用 */
+        const storyText = document.getElementById('story-text');
+
+        /* 2. 定义对话数组:每一项是一句台词。
+              想新增对话直接往这里加字符串即可。 */
+        const lines = [
+            "六月的傍晚，热气还没散尽。",
+            "铁锅与铲子碰撞的声音，在街角重复了一整天。",
+            "林韦站在摊子后面，机械地翻动着锅里的米粒",
+            "油光、葱花、鸡蛋，混在一起，冒着白烟。",
+            "他的手很稳，心却很空。",
+            "（大学毕业三个月了。）",
+            "（投出去的简历，像扔进河里的石子，连个响都没有。）",
+            "（现在每天站在这里，帮我爸卖炒饭。）",
+            "父亲:发什么呆？火候大了！",
+            "林韦：……知道了。",
+            "他低下头，继续翻炒。",
+            "锅里的饭粒跳动着，像在嘲笑他。",
+            "就在这时，摊子前停下了一个人。",
+            "他没抬头，习惯性地开口。",
+            "林韦：吃什么",
+            "话说到一半，他抬起了头。",
+            "然后，愣住了。",
+            "站在摊前的，是一个穿着浅色连衣裙的女生。",
+            "长发，安静，眼睛很亮。",
+            "那张脸，他认得。",
+            "<b>林韦：</b>\"……思博雅？\"",
+            "<b>思博雅：</b>\"……林韦。\"",
+            "她轻轻叫了他的名字。",
+            "声音和记忆里一样，只是多了点说不清的东西。",
+            "空气安静了几秒。",
+            "只有锅里的油还在滋滋作响。",
+            "<b>思博雅：</b>\"好久不见。\"",
+            "<b>林韦：</b>\"嗯……好久不见。\"",
+            "他想说点什么。",
+            "想问她这些年去哪了，想问她怎么找到这里的，想问她……还记不记得小时候的事。",
+            "但最后，什么都没说出口。",
+            "思博雅的目光，从他脸上，移到了他身后的摊子。",
+            "移到了那口油腻的铁锅上。",
+            "移到了他被油烟熏得发黄的手上。",
+            "她的眼神，变了。",
+            "不是嫌弃。",
+            "是……心疼。",
+            "<b>思博雅：</b>\"你……一直在这里吗？\"",
+            "<b>林韦：</b>\"嗯。毕业了，没找到工作，就先帮我爸。\"",
+            "他笑了一下，想装得轻松点。",
+            "但那个笑，连他自己都觉得难看。",
+            "思博雅没有笑。",
+            "她看着他，看了很久。",
+            "<b>思博雅：</b>\"……\"",
+            "<b>思博雅：</b>\"你要好好的。\"",
+            "说完这句话，她转过身，走了。",
+            "没有买炒饭。",
+            "没有留联系方式。",
+            "只是走了。",
+            "林韦站在原地，看着她的背影，一点一点消失在街角。",
+            "手里的铲子，还举在半空。",
+            "<b>林韦（内心）：</b>（……她走了。）",
+            "<b>林韦（内心）：</b>（她看了看我，然后走了。）",
+            "<b>林韦（内心）：</b>（她是不是觉得……我很可怜？）",
+            "锅里的饭，糊了。",
+            "父亲骂了他一句，他没听见。",
+            "那天晚上，摊子收得很早。",
+            "林韦没回家。",
+            "他一个人，在街上闲逛。",
+            "城市的灯很亮。",
+            "但没有一盏，是为他亮的。",
+            "他走到了一座桥上。",
+            "桥下是河，黑漆漆的，看不见底。",
+            "林韦（内心）：（我到底在干什么啊。）",
+            "林韦（内心）：（读了四年大学，最后站在这里卖炒饭。）",
+            "林韦（内心）：（连她……都用那种眼神看我。）",
+            "他靠在栏杆上，仰起头。",
+            "天上没有星星。",
+            "林韦：真没意思。",
+            "他往后退了一步。",
+            "脚下一滑。",
+            "栏杆很低。",
+            "夜很黑。",
+            "扑通——",
+            "河水很凉。",
+            "凉得刺骨。",
+            "他挣扎了几下，然后，什么都不知道了。",
+            "——"
+        ];
+
+        /* 3. 记录当前显示到第几句,初始为 0(第一句) */
+        let i = 0;
+
+        /* 4. 把"显示下一句"的逻辑封装成函数,
+              多个事件(点击、键盘)都可以复用它。 */
+        function nextLine() {
+            i++;                                  /* 索引 +1,切换到下一句 */
+            if (i >= lines.length) {              /* 越界检查 */
+                i = 0;                            /* 回到开头,实现循环 */
+            }
+            storyText.textContent = lines[i];     /* 更新显示的文字 */
+        }
+
+        /* 5. 页面加载后,先把第一句填进文本框 */
+        storyText.textContent = lines[i];
+
+        /* 6. ★ 核心改动:把点击事件绑定到 document,
+              这样无论点屏幕哪里(背景、分隔线、文字)都会推进对话。 */
+        document.onclick = function () {
+            nextLine();
+        };
+
+        /* 7. (可选)键盘监听:空格/回车也能推进对话,体验更顺滑 */
+        document.onkeydown = function (e) {
+            // e.key 是按下的键名,空格是 " " / "Space",回车是 "Enter"
+            if (e.key === " " || e.key === "Enter" || e.key === "Spacebar") {
+                e.preventDefault();    /* 阻止空格默认行为,防止页面滚动 */
+                nextLine();            /* 调用同一段逻辑 */
+            }
+        };
+    </script>
+</body>
+</html>
