@@ -41,9 +41,10 @@
             width: 100vw;
             height: 100vh;
             background-image: url(素材1.png);
-            background-size: cover;
+            background-size:cover;
             background-repeat: no-repeat;
             background-position: center;
+            
         }
 
         /* 分隔线(视觉上像对话框顶部的发光条):
@@ -95,12 +96,33 @@
             backdrop-filter: blur(4px);            /* 背景模糊,玻璃质感(可选) */
             -webkit-backdrop-filter: blur(4px);     /* Safari 兼容写法 */
         }
+         #back {
+            position: absolute;
+            top: 950px;
+            left: 100px;
+            width: 150px;
+            height: 90px;
+            cursor: pointer;
+            z-index: 2;
+            background:transparent;
+            border:none;
+            left: 190px;
+        }
+
+
+
+
+
+
+
+
+
     </style>
 </head>
 
 <body>
     <!-- 全屏背景图层 -->
-    <div class="game-body"></div>
+    <div id="game-bg" class="game-body"></div>
 
     <!-- 分隔线(对话框发光效果) -->
     <hr class="underline">
@@ -139,14 +161,14 @@
             "站在摊前的，是一个穿着浅色连衣裙的女生。",
             "长发，安静，眼睛很亮。",
             "那张脸，他认得。",
-            "<b>林韦：</b>\"……思博雅？\"",
-            "<b>思博雅：</b>\"……林韦。\"",
+            "林韦：……思博雅？",
+            "思博雅：……林韦",
             "她轻轻叫了他的名字。",
             "声音和记忆里一样，只是多了点说不清的东西。",
             "空气安静了几秒。",
             "只有锅里的油还在滋滋作响。",
-            "<b>思博雅：</b>\"好久不见。\"",
-            "<b>林韦：</b>\"嗯……好久不见。\"",
+            "思博雅：好久不见。",
+            "林韦：嗯……好久不见。",
             "他想说点什么。",
             "想问她这些年去哪了，想问她怎么找到这里的，想问她……还记不记得小时候的事。",
             "但最后，什么都没说出口。",
@@ -156,23 +178,23 @@
             "她的眼神，变了。",
             "不是嫌弃。",
             "是……心疼。",
-            "<b>思博雅：</b>\"你……一直在这里吗？\"",
-            "<b>林韦：</b>\"嗯。毕业了，没找到工作，就先帮我爸。\"",
+            "思博雅：你……一直在这里吗？",
+            "林韦：嗯。毕业了，没找到工作，就先帮我爸。",
             "他笑了一下，想装得轻松点。",
             "但那个笑，连他自己都觉得难看。",
             "思博雅没有笑。",
             "她看着他，看了很久。",
-            "<b>思博雅：</b>\"……\"",
-            "<b>思博雅：</b>\"你要好好的。\"",
+            "思博雅：……",
+            "思博雅：你要好好的。",
             "说完这句话，她转过身，走了。",
             "没有买炒饭。",
             "没有留联系方式。",
             "只是走了。",
             "林韦站在原地，看着她的背影，一点一点消失在街角。",
             "手里的铲子，还举在半空。",
-            "<b>林韦（内心）：</b>（……她走了。）",
-            "<b>林韦（内心）：</b>（她看了看我，然后走了。）",
-            "<b>林韦（内心）：</b>（她是不是觉得……我很可怜？）",
+            "林韦（内心）：（……她走了。）",
+            "林韦（内心）：（她看了看我，然后走了。）",
+            "林韦（内心）：（她是不是觉得……我很可怜？）",
             "锅里的饭，糊了。",
             "父亲骂了他一句，他没听见。",
             "那天晚上，摊子收得很早。",
@@ -206,9 +228,22 @@
               多个事件(点击、键盘)都可以复用它。 */
         function nextLine() {
             i++;                                  /* 索引 +1,切换到下一句 */
-            if (i >= lines.length) {              /* 越界检查 */
-                i = 0;                            /* 回到开头,实现循环 */
+            if (i >= lines.length) {
+                window.location.href = "game2.html";   /* 跳转到下一章 */
+            ;                                 /* 立刻退出,后续代码不再执行 */
             }
+
+            /* ★ 当剧情推进到第 32 句(思博雅转身离开那一刻)时,
+               把背景图从素材1切换到素材2:
+               用 id="game-bg" 找到 .game-body 容器,
+               再用 style.backgroundImage 覆盖 CSS 里的背景图。
+               注意:.style.backgroundImage 写法是驼峰,I 要大写。 */
+            if (i === 56) {
+                document.getElementById("game-bg").style.backgroundImage = "url('素材2.png')";
+            }
+
+        
+
             storyText.textContent = lines[i];     /* 更新显示的文字 */
         }
 
@@ -228,6 +263,15 @@
                 e.preventDefault();    /* 阻止空格默认行为,防止页面滚动 */
                 nextLine();            /* 调用同一段逻辑 */
             }
+        };
+    </script>
+    
+    <img src="back.png" alt="返回" id="back">
+    <script>
+        document.getElementById("back").onclick = function (e) {
+            e.stopPropagation();
+            window.location.href = "index.html";
+
         };
     </script>
 </body>
